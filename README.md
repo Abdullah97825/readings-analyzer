@@ -8,6 +8,13 @@ The direction analyzer script analyzes the direction data to determine the best 
 **This project and its results are part of a research project by Nada Saleh Ammoo.**
 **Please refer to the research work associated with this project for more information on the methodology and the data.**
 
+## Prerequisites to run the scripts
+
+- Python 3.10 or higher [https://www.python.org/downloads/]
+- pandas library [install using Pip](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html#installing-from-pypi)
+- NumPy [Install using Pip](https://numpy.org/install/)
+
+
 ## Best Direction Analyzer
 
 The best direction analyzer script is located in the `best-direction-analyzer` directory.
