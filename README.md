@@ -10,9 +10,9 @@ The direction analyzer script analyzes the direction data to determine the best 
 
 ## Prerequisites to run the scripts
 
-- Python 3.10 or higher [https://www.python.org/downloads/]
-- pandas library [install using Pip](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html#installing-from-pypi)
-- NumPy [Install using Pip](https://numpy.org/install/)
+- Python 3.10 or higher [must be installed](https://www.python.org/downloads/)
+- pandas library. [Install using Pip](https://pandas.pydata.org/pandas-docs/stable/getting_started/install.html#installing-from-pypi)
+- NumPy library. [Install using Pip](https://numpy.org/install/)
 
 
 ## Best Direction Analyzer
