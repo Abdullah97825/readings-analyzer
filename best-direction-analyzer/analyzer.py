@@ -193,56 +193,6 @@ def analyze_file_statistics(df, directions, output_file, has_concrete=False):
     print("\nResults summary:")
     print(results)
 
-def analyze_directions_with_concrete(df):
-    """
-    Modified version of analyze_directions for concrete data
-    """
-    # Convert all temperature and humidity columns to numeric
-    directions = ['south-glass', 'south-con', 'west', 'east']
-    for direction in directions + ['north']:
-        if direction == 'south-con':
-            temp_col = 'T1ENVIRO[C]-south-con'
-            humidity_col = 'HUMD1ENVIRO[%rH]-south-con'
-        else:
-            temp_col = f'Temperature[C]-{direction}-glass'
-            humidity_col = f'Humidity[%rH]-{direction}-glass'
-        df[temp_col] = pd.to_numeric(df[temp_col], errors='coerce')
-        df[humidity_col] = pd.to_numeric(df[humidity_col], errors='coerce')
-    
-    # Calculate means
-    for direction in directions + ['north']:
-        if direction == 'south-con':
-            df[f'Mean_{direction}'] = df.apply(
-                lambda row: np.mean([
-                    row['T1ENVIRO[C]-south-con'],
-                    row['HUMD1ENVIRO[%rH]-south-con']
-                ]),
-                axis=1
-            )
-        else:
-            df[f'Mean_{direction}'] = df.apply(
-                lambda row: calculate_direction_mean(row, direction),
-                axis=1
-            )
-    
-    # Rest of the analysis remains similar
-    df['Best_Direction'] = df.apply(
-        lambda row: min(
-            [(direction, row[f'Mean_{direction}']) for direction in directions],
-            key=lambda x: x[1]
-        )[0],
-        axis=1
-    )
-    
-    df['Best_Direction_Mean'] = df.apply(
-        lambda row: row[f'Mean_{row["Best_Direction"]}'],
-        axis=1
-    )
-    
-    df['Better_Than_North'] = df['Best_Direction_Mean'] < df['Mean_north']
-    
-    return df
-
 def main():
     """
     Main function to handle both files
