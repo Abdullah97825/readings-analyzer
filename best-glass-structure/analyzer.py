@@ -106,6 +106,10 @@ def calculate_heat_index(temp, humidity):
             (c_8 * temp * (humidity ** 2)) + 
             (c_9 * (temp ** 2) * (humidity ** 2)))
 
+def celsius_to_fahrenheit(celsius):
+    """Convert Celsius temperature to Fahrenheit"""
+    return (celsius * 9/5) + 32
+
 def analyze_glassbox_data(df):
     """
     Analyze glassbox data and determine the best glass type for each row
@@ -121,7 +125,7 @@ def analyze_glassbox_data(df):
     for category in categories:
         df[f'{category}_heat_index'] = df.apply(
             lambda row: calculate_heat_index(
-                row[f'{category}-temp'],
+                celsius_to_fahrenheit(row[f'{category}-temp']),  # Convert Celsius to Fahrenheit
                 row[f'{category}-humidity']
             ),
             axis=1
@@ -149,6 +153,27 @@ def analyze_glassbox_data(df):
     })
     
     return category_counts
+
+#This function is used to print the heat indices for the first 30 rows of the dataframe for debugging purposes
+def print_first_30_heat_indices(df):
+    """
+    Print heat indices for the first 30 rows of the dataframe
+    """
+    categories = ['environment', 'double-glass', 'triple-glass', 'quad-glass']
+    
+    print("\n=== Heat Indices for First 30 Rows ===")
+    print("\nRow | Category | Temperature (C) | Temperature (F) | Humidity | Heat Index")
+    print("-" * 75)
+    
+    for idx in range(min(30, len(df))):
+        for category in categories:
+            temp_c = df.iloc[idx][f'{category}-temp']
+            temp_f = celsius_to_fahrenheit(temp_c)
+            humidity = df.iloc[idx][f'{category}-humidity']
+            heat_index = calculate_heat_index(temp_f, humidity)
+            
+            print(f"{idx:3d} | {category:10s} | {temp_c:13.2f} | {temp_f:13.2f} | {humidity:7.2f} | {heat_index:.2f}")
+        print("-" * 75)
 
 def main():
     """
@@ -190,6 +215,9 @@ def main():
         output_path = os.path.join(output_dir, 'glassbox_analysis_south_summer.csv')
         results_south.to_csv(output_path, index=False)
         print("=== South Summer data analysis completed ===\n")
+        
+        # Print first 30 heat indices for south summer data
+        # print_first_30_heat_indices(df_south)
 
 if __name__ == "__main__":
     main()
