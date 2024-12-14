@@ -92,9 +92,41 @@ def calculate_direction_mean(row, direction, has_concrete=False):
     
     return np.mean([temp_value, humidity_value])
 
-def analyze_directions(df, has_concrete=False):
+def calculate_heat_index_1(temp, humidity):
+    """
+    Calculate heat index using equation 1: HI = Temp + (0.33 * humidity) - 0.7
+    Temperature should be in Celsius
+    """
+    return temp + (0.33 * humidity) - 0.7
+
+def calculate_heat_index_2(temp, humidity):
+    """
+    Calculate heat index using equation 2 (from glass structure analyzer)
+    Temperature must be converted to Fahrenheit first
+    """
+    # Convert Celsius to Fahrenheit
+    temp_f = (temp * 9/5) + 32
+    
+    c_1 = -42.379
+    c_2 = 2.04901523
+    c_3 = 10.14333127
+    c_4 = -0.22475541
+    c_5 = -0.0068783
+    c_6 = -0.05481717
+    c_7 = 0.00122874
+    c_8 = 0.00085282
+    c_9 = -0.00000199
+    
+    return (c_1 + (c_2 * temp_f) + (c_3 * humidity) + 
+            (c_4 * temp_f * humidity) + (c_5 * (temp_f ** 2)) + 
+            (c_6 * (humidity ** 2)) + (c_7 * (temp_f ** 2) * humidity) + 
+            (c_8 * temp_f * (humidity ** 2)) + 
+            (c_9 * (temp_f ** 2) * (humidity ** 2)))
+
+def analyze_directions(df, method='mean', has_concrete=False):
     """
     Find the best direction and compare with north for each row
+    method can be 'mean', 'heat_index_1', or 'heat_index_2'
     """
     # Define directions based on file type
     if has_concrete:
@@ -113,30 +145,54 @@ def analyze_directions(df, has_concrete=False):
         df[temp_col] = pd.to_numeric(df[temp_col], errors='coerce')
         df[humidity_col] = pd.to_numeric(df[humidity_col], errors='coerce')
     
-    # Calculate means for each direction for each row
+    # Calculate values for each direction based on method
     for direction in directions + ['north-glass']:
-        df[f'Mean_{direction}'] = df.apply(
-            lambda row: calculate_direction_mean(row, direction, has_concrete), 
-            axis=1
-        )
+        if direction == 'south-con':
+            temp_col = 'T1ENVIRO[C]-south-con'
+            humidity_col = 'HUMD1ENVIRO[%rH]-south-con'
+        else:
+            temp_col = f'Temperature[C]-{direction}'
+            humidity_col = f'Humidity[%rH]-{direction}'
+        
+        if method == 'mean':
+            df[f'Value_{direction}'] = df.apply(
+                lambda row: calculate_direction_mean(row, direction, has_concrete),
+                axis=1
+            )
+        elif method == 'heat_index_1':
+            df[f'Value_{direction}'] = df.apply(
+                lambda row: calculate_heat_index_1(
+                    row[temp_col],
+                    row[humidity_col]
+                ),
+                axis=1
+            )
+        elif method == 'heat_index_2':
+            df[f'Value_{direction}'] = df.apply(
+                lambda row: calculate_heat_index_2(
+                    row[temp_col],
+                    row[humidity_col]
+                ),
+                axis=1
+            )
     
     # Find best direction (excluding north)
     df['Best_Direction'] = df.apply(
         lambda row: min(
-            [(direction, row[f'Mean_{direction}']) for direction in directions],
+            [(direction, row[f'Value_{direction}']) for direction in directions],
             key=lambda x: x[1]
         )[0],
         axis=1
     )
     
-    # Get the mean value for the best direction
-    df['Best_Direction_Mean'] = df.apply(
-        lambda row: row[f'Mean_{row["Best_Direction"]}'],
+    # Get the value for the best direction
+    df['Best_Direction_Value'] = df.apply(
+        lambda row: row[f'Value_{row["Best_Direction"]}'],
         axis=1
     )
     
     # Compare with North
-    df['Better_Than_North'] = df['Best_Direction_Mean'] < df[f'Mean_north-glass']
+    df['Better_Than_North'] = df['Best_Direction_Value'] < df[f'Value_north-glass']
     
     return df
 
@@ -187,7 +243,11 @@ def analyze_file_statistics(df, directions, output_file, has_concrete=False):
     
     # Save results using relative path
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    output_path = os.path.join(script_dir, 'output', output_file)
+    output_path = os.path.join(script_dir, output_file)
+    
+    # Create all necessary directories in the path
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
     results.to_csv(output_path, index=False)
     print(f"\nStatistics saved to {output_path}")
     print("\nResults summary:")
@@ -195,37 +255,48 @@ def analyze_file_statistics(df, directions, output_file, has_concrete=False):
 
 def main():
     """
-    Main function to handle both files
+    Main function to handle both files with three different methods
     """
     # Get the directory where the script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Create output directory relative to script location
-    output_dir = os.path.join(script_dir, 'output')
-    os.makedirs(output_dir, exist_ok=True)
+    # Define methods and their output directories
+    methods = {
+        'mean': 'mean_eqn_output',
+        'heat_index_1': 'heat_index_eqn1_output',
+        'heat_index_2': 'heat_index_eqn2_output'
+    }
     
-    # Process no-concrete file
-    no_concrete_file = os.path.join(script_dir, 'ICONALLDATA-no-concrete.csv')
-    df_no_concrete = load_csv(no_concrete_file)
-    if df_no_concrete is not None:
-        df_no_concrete = analyze_directions(df_no_concrete, has_concrete=False)
-        analyze_file_statistics(
-            df_no_concrete,
-            ['south-glass', 'west-glass', 'east-glass'],
-            'statistics_no_concrete.csv'
-        )
-    
-    # Process with-concrete file
-    with_concrete_file = os.path.join(script_dir, 'ICONALLDATA-with-concrete.csv')
-    df_with_concrete = load_csv(with_concrete_file)
-    if df_with_concrete is not None:
-        df_with_concrete = analyze_directions(df_with_concrete, has_concrete=True)
-        analyze_file_statistics(
-            df_with_concrete,
-            ['south-glass', 'south-con', 'west-glass', 'east-glass'],
-            'statistics_with_concrete.csv',
-            has_concrete=True
-        )
+    # Process each method
+    for method, output_dir_name in methods.items():
+        # Create output directory
+        output_dir = os.path.join(script_dir, output_dir_name)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        print(f"\nProcessing using {method} method...")
+        
+        # Process no-concrete file
+        no_concrete_file = os.path.join(script_dir, 'ICONALLDATA-no-concrete.csv')
+        df_no_concrete = load_csv(no_concrete_file)
+        if df_no_concrete is not None:
+            df_no_concrete = analyze_directions(df_no_concrete, method=method, has_concrete=False)
+            analyze_file_statistics(
+                df_no_concrete,
+                ['south-glass', 'west-glass', 'east-glass'],
+                os.path.join(output_dir_name, 'statistics_no_concrete.csv')
+            )
+        
+        # Process with-concrete file
+        with_concrete_file = os.path.join(script_dir, 'ICONALLDATA-with-concrete.csv')
+        df_with_concrete = load_csv(with_concrete_file)
+        if df_with_concrete is not None:
+            df_with_concrete = analyze_directions(df_with_concrete, method=method, has_concrete=True)
+            analyze_file_statistics(
+                df_with_concrete,
+                ['south-glass', 'south-con', 'west-glass', 'east-glass'],
+                os.path.join(output_dir_name, 'statistics_with_concrete.csv'),
+                has_concrete=True
+            )
 
 if __name__ == "__main__":
     main()
