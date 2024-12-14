@@ -6,7 +6,7 @@ The glassbox analyzer script analyzes the glassbox data to determine the best gl
 The direction analyzer script analyzes the direction data to determine the best direction for each row.
 
 **This project and its results are part of a research project by Nada Saleh Ammoo.**
-**Please refer to the research work associated with this project for more information on the methodology and the data.**
+**For more information about the research methodology and data, please contact: hi.cornr@gmail.com**
 
 ## Prerequisites to run the scripts
 
@@ -28,8 +28,12 @@ To run the script, navigate to the `best-direction-analyzer` directory and run t
 python analyzer.py
 ```
 
-The script will output the results to the `output` directory.
-Two output files will be created:
+The script will analyze the data using three different methods and output the results to three separate directories:
+1. `mean_eqn_output/`: Results using the mean-based equation
+2. `heat_index_eqn1_output/`: Results using heat index equation 1 (HI = Temp + (0.33 * humidity) - 0.7)
+3. `heat_index_eqn2_output/`: Results using heat index equation 2 (complex formula with coefficients)
+
+Each output directory will contain:
 - `statistics_no_concrete.csv`: The statistics for the no-concrete scenario.
 - `statistics_with_concrete.csv`: The statistics for the with-concrete scenario.
 
