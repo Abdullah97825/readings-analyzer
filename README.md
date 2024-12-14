@@ -6,7 +6,7 @@ The glassbox analyzer script analyzes the glassbox data to determine the best gl
 The direction analyzer script analyzes the direction data to determine the best direction for each row.
 
 **This project and its results are part of a research project by Nada Saleh Ammoo.**
-**For more information about the research methodology and data, please contact: hi.cornr@gmail.com**
+**For more information about the research, methodology, and data, please contact: hi.cornr@gmail.com**
 
 ## Prerequisites to run the scripts
 
